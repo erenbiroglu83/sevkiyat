@@ -6,7 +6,7 @@
 <title>Sevkiyat Manifestosu — Kanyon Ofis</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/zxing-library/0.20.0/index.min.js"></script>
+<script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
 <style>
   :root{
     --ink:#1C2128; --panel:#232A34; --panel-2:#2B3340; --line:#3A4453;
@@ -273,14 +273,19 @@ function triggerFlash(){
 // --- Kamera (ZXing) ---
 async function startCamera(){
   try{
+    if(typeof ZXing === 'undefined'){
+      throw new Error('Barkod kütüphanesi yüklenemedi — internet bağlantısını kontrol edip sayfayı yenileyin');
+    }
     if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
       throw new Error('Kamera API yok (sayfa https üzerinden mi açık?)');
     }
     reader = new ZXing.BrowserMultiFormatReader();
-    const devices = await ZXing.BrowserMultiFormatReader.listVideoInputDevices();
-    const deviceId = devices.length ? (devices.find(d=>/back|rear|environment/i.test(d.label))||devices[devices.length-1]).deviceId : undefined;
     camOff.style.display='none';
-    await reader.decodeFromVideoDevice(deviceId, video, r=>{ if(r) onCodeCaptured(r.getText()); });
+    await reader.decodeFromConstraints(
+      { video: { facingMode: 'environment' } },
+      video,
+      r=>{ if(r) onCodeCaptured(r.getText()); }
+    );
     camActive=true;
     camToggle.textContent='Kamerayı Durdur';
   }catch(e){
